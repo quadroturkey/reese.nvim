@@ -624,8 +624,16 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        ts_ls = {},
         --
+
+        ruby_lsp = {
+          cmd = { 'bundle', 'exec', 'ruby-lsp' },
+          init_options = {
+            formatter = 'syntax_tree',
+            -- enabledFeatures = { 'diagnostics', 'formatting' },
+          },
+        },
 
         lua_ls = {
           -- cmd = { ... },
@@ -637,7 +645,7 @@ require('lazy').setup({
                 callSnippet = 'Replace',
               },
               -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-              -- diagnostics = { disable = { 'missing-fields' } },
+              diagnostics = { disable = { 'missing-fields' } },
             },
           },
         },
@@ -689,7 +697,7 @@ require('lazy').setup({
       },
     },
     opts = {
-      notify_on_error = false,
+      notify_on_error = true,
       format_on_save = function(bufnr)
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
@@ -702,12 +710,14 @@ require('lazy').setup({
           lsp_format_opt = 'fallback'
         end
         return {
-          timeout_ms = 500,
+          timeout_ms = 5000,
           lsp_format = lsp_format_opt,
         }
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        ruby = { 'rubocop' },
+
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
