@@ -690,6 +690,14 @@ require('lazy').setup({
         --   },
         -- },
 
+        -- ruby_lsp = {
+        --   cmd = { 'bundle', 'exec', 'ruby-lsp' },
+        --   init_options = {
+        --     formatter = 'syntax_tree',
+        --     -- enabledFeatures = { 'diagnostics', 'formatting' },
+        --   },
+        -- },
+
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
