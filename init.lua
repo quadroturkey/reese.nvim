@@ -676,13 +676,24 @@ require('lazy').setup({
         ts_ls = {},
         --
 
-        ruby_lsp = {
-          cmd = { 'bundle', 'exec', 'ruby-lsp' },
-          init_options = {
-            formatter = 'syntax_tree',
-            -- enabledFeatures = { 'diagnostics', 'formatting' },
-          },
+        rubocop = {
+          cmd = { 'rubocop', '--lsp' },
+          root_dir = require('lspconfig').util.root_pattern('Gemfile', '.git'),
+          on_attach = function(client, bufnr)
+            -- Enable formatting with RuboCop
+            if client.server_capabilities.documentFormattingProvider then
+              vim.cmd 'autocmd BufWritePre <buffer> lua vim.lsp.buf.format()'
+            end
+          end,
         },
+
+        -- ruby_lsp = {
+        --   cmd = { 'bundle', 'exec', 'ruby-lsp' },
+        --   init_options = {
+        --     formatter = 'syntax_tree',
+        --     -- enabledFeatures = { 'diagnostics', 'formatting' },
+        --   },
+        -- },
 
         lua_ls = {
           -- cmd = { ... },
