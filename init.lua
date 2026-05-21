@@ -630,10 +630,39 @@ require('lazy').setup({
         end,
       })
 
+      -- Cop codes to silence in this editor only (not project-wide).
+      local ignored_diagnostic_codes = {
+        ['Layout/LineLength'] = true,
+      }
+
+      local in_insert_mode = false
+      vim.api.nvim_create_autocmd('InsertEnter', {
+        callback = function()
+          in_insert_mode = true
+        end,
+      })
+      vim.api.nvim_create_autocmd('InsertLeave', {
+        callback = function()
+          in_insert_mode = false
+        end,
+      })
+
+      local orig_set = vim.diagnostic.set
+      vim.diagnostic.set = function(namespace, bufnr, diagnostics, opts)
+        if in_insert_mode then
+          return
+        end
+        diagnostics = vim.tbl_filter(function(d)
+          return not ignored_diagnostic_codes[d.code]
+        end, diagnostics or {})
+        return orig_set(namespace, bufnr, diagnostics, opts)
+      end
+
       -- Diagnostic Config
       -- See :help vim.diagnostic.Opts
       vim.diagnostic.config {
         severity_sort = true,
+        update_in_insert = true,
         float = { border = 'rounded', source = 'if_many' },
         underline = { severity = vim.diagnostic.severity.ERROR },
         signs = vim.g.have_nerd_font and {
@@ -644,20 +673,36 @@ require('lazy').setup({
             [vim.diagnostic.severity.HINT] = '󰌶 ',
           },
         } or {},
-        virtual_text = {
-          source = 'if_many',
-          spacing = 2,
+        virtual_text = false,
+        virtual_lines = {
+          -- current_line = true,
           format = function(diagnostic)
-            local diagnostic_message = {
-              [vim.diagnostic.severity.ERROR] = diagnostic.message,
-              [vim.diagnostic.severity.WARN] = diagnostic.message,
-              [vim.diagnostic.severity.INFO] = diagnostic.message,
-              [vim.diagnostic.severity.HINT] = diagnostic.message,
-            }
-            return diagnostic_message[diagnostic.severity]
+            local msg = diagnostic.message
+            local code = diagnostic.code
+            if code and msg:sub(1, #code + 2) == code .. ': ' then
+              msg = msg:sub(#code + 3)
+            end
+            return msg
           end,
         },
       }
+
+      local warnings_hidden = false
+      vim.keymap.set('n', '<leader>td', function()
+        warnings_hidden = not warnings_hidden
+        local cfg = vim.diagnostic.config()
+        local vl = vim.deepcopy(cfg.virtual_lines or {})
+        local sg = vim.deepcopy(cfg.signs or {})
+        if warnings_hidden then
+          vl.severity = { min = vim.diagnostic.severity.ERROR }
+          sg.severity = { min = vim.diagnostic.severity.ERROR }
+        else
+          vl.severity = nil
+          sg.severity = nil
+        end
+        vim.diagnostic.config { virtual_lines = vl, signs = sg }
+        vim.notify('Diagnostic warnings ' .. (warnings_hidden and 'hidden' or 'shown'))
+      end, { desc = '[T]oggle [D]iagnostic warnings' })
 
       -- LSP servers and clients are able to communicate to each other what features they support.
       --  By default, Neovim doesn't support everything that is in the LSP specification.
@@ -715,7 +760,7 @@ require('lazy').setup({
                 callSnippet = 'Replace',
               },
               -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-              diagnostics = { disable = { 'missing-fields' } },
+              diagnostics = { disable = { 'missing-fields' }, globals = { 'vim' } },
             },
           },
         },
@@ -734,6 +779,11 @@ require('lazy').setup({
       --
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
+      for server_name, server in pairs(servers) do
+        server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+        vim.lsp.config(server_name, server)
+      end
+
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
@@ -844,10 +894,10 @@ require('lazy').setup({
       local cmp = require 'cmp'
       local luasnip = require 'luasnip'
       luasnip.config.setup {}
-
       luasnip.filetype_extend('eruby', { 'html', 'ruby' })
 
       cmp.setup {
+
         snippet = {
           expand = function(args)
             luasnip.lsp_expand(args.body)
@@ -884,6 +934,7 @@ require('lazy').setup({
           --  Generally you don't need this, because nvim-cmp will display
           --  completions whenever it has completion options available.
           ['<C-Space>'] = cmp.mapping.complete {},
+          ['<C-k'] = cmp.mapping.complete {},
 
           -- Think of <c-l> as moving to the right of your snippet expansion.
           --  So if you have a snippet that's like:
