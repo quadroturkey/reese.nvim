@@ -104,4 +104,9 @@ end, { desc = '[S]earch by [G]rep in custom dirs' })
 
 vim.keymap.set('n', '<leader>cd', _G.update_custom_search_dirs, { desc = '[S]earch [D]irs: set custom search dirs' })
 
+-- Git telescope pickers
+vim.keymap.set('n', '<leader>gb', builtin.git_branches, { desc = '[G]it [B]ranches' })
+vim.keymap.set('n', '<leader>gs', builtin.git_stash,    { desc = '[G]it [S]tash' })
+vim.keymap.set('n', '<leader>gc', builtin.git_commits,  { desc = '[G]it [C]ommits' })
+
 return {}
